@@ -241,13 +241,20 @@ def test_hgt_conv_use_RTE():
 
     data['author', 'writes',
          'paper'].edge_index = get_random_edge_index(4, 6, 20)
+    
+    # TODO: check how to add time_diff to hetero data object
+    import numpy as np
+    # Create random edge time_diffs
+    num_edges = data['author', 'writes', 'paper'].edge_index.size(1)
+    edge_times = torch.from_numpy(np.random.randint(0, 100, size=(num_edges,)))
+    edge_time_diff_dict = {('author', 'writes', 'paper'): edge_times}
 
     metadata = (['author', 'paper',
                  'university'], [('author', 'writes', 'paper'),
                                  ('university', 'employs', 'author')])
     conv = HGTConv(-1, 64, metadata, heads=1, use_RTE=True)
 
-    out_dict = conv(data.x_dict, data.edge_index_dict)
+    out_dict = conv(data.x_dict, data.edge_index_dict, edge_time_diff_dict)
     assert out_dict['author'].size() == (4, 64)
     assert out_dict['paper'].size() == (6, 64)
     assert 'university' not in out_dict

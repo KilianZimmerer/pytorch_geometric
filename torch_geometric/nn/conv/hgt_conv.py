@@ -158,7 +158,8 @@ class HGTConv(MessagePassing):
     def forward(
         self,
         x_dict: Dict[NodeType, Tensor],
-        edge_index_dict: Dict[EdgeType, Adj]  # Support both.
+        edge_index_dict: Dict[EdgeType, Adj],  # Support both.
+        edge_time_diff_dict: Optional[Dict[EdgeType, Tensor]] = None
     ) -> Dict[NodeType, Optional[Tensor]]:
         r"""Runs the forward pass of the module.
 
@@ -197,11 +198,14 @@ class HGTConv(MessagePassing):
         edge_index, edge_attr = construct_bipartite_edge_index(
             edge_index_dict, src_offset, dst_offset, edge_attr_dict=self.p_rel,
             num_nodes=k.size(0))
+        
+        # TODO: this must be included in the previous function
+        _, edge_time_diff = construct_bipartite_edge_index(
+            edge_index_dict, src_offset, dst_offset, edge_attr_dict=edge_time_diff_dict,
+            num_nodes=k.size(0))
 
-        # TODO: temporal information in edge_attr?
-        time_differences = torch.full((edge_index.size(1),), 2, dtype=torch.float32)  # Placeholder
-        temporal_features = RelativeTemporalEncoding(F)(time_differences).view(-1, H, D) if self.use_RTE else None
-        import pdb;pdb.set_trace()
+        temporal_features = RelativeTemporalEncoding(F)(edge_time_diff).view(-1, H, D) if self.use_RTE else None
+
         out = self.propagate(edge_index, k=k, q=q, v=v, edge_attr=edge_attr, temporal_features=temporal_features)
 
         # Reconstruct output node embeddings dict:
@@ -231,8 +235,7 @@ class HGTConv(MessagePassing):
     def message(self, k_j: Tensor, q_i: Tensor, v_j: Tensor, edge_attr: Tensor,
                 index: Tensor, ptr: Optional[Tensor], temporal_features: Optional[Tensor],
                 size_i: Optional[int]) -> Tensor:
-        import pdb;pdb.set_trace()
-        if temporal_features:
+        if temporal_features is not None:
             k_j = k_j + temporal_features
             v_j = v_j + temporal_features
         alpha = (q_i * k_j).sum(dim=-1) * edge_attr
