@@ -199,7 +199,7 @@ class HGTConv(MessagePassing):
             edge_index_dict, src_offset, dst_offset, edge_attr_dict=self.p_rel,
             num_nodes=k.size(0))
         
-        # TODO: this must be included in the previous function
+        # TODO: this is a workaround and must be included in the previous function (very complex)
         _, edge_time_diff = construct_bipartite_edge_index(
             edge_index_dict, src_offset, dst_offset, edge_attr_dict=edge_time_diff_dict,
             num_nodes=k.size(0))
