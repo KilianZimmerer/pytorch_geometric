@@ -1,5 +1,6 @@
 import math
 from typing import Dict, List, Optional, Tuple, Union
+import warnings
 
 import torch
 from torch import Tensor
@@ -158,6 +159,33 @@ class HGTConv(MessagePassing):
 
         return k, v, offset
 
+    def _validate_inputs(
+        self,
+        edge_index_dict: Dict[EdgeType, Adj],
+        edge_time_diff_dict: Optional[Dict[EdgeType, Tensor]]
+    ):
+        """Helper function to validate inputs for temporal encoding."""
+
+        if not self.use_RTE and edge_time_diff_dict is not None:
+            warnings.warn(
+                "'use_RTE' is False, but an 'edge_time_diff_dict' was provided. "
+                "The temporal data will be ignored."
+            )
+            return
+
+        if self.use_RTE:
+            if edge_time_diff_dict is None:
+                raise ValueError(
+                    "RTE is enabled, but no 'edge_time_diff_dict' was provided."
+                )
+
+            for edge_type in edge_index_dict.keys():
+                if edge_type not in edge_time_diff_dict:
+                    raise ValueError(
+                        f"RTE is enabled, but 'time_diff' is missing for edge type: {edge_type}. "
+                        "All edge types must have a time difference attribute."
+                    )
+
     def forward(
         self,
         x_dict: Dict[NodeType, Tensor],
@@ -180,6 +208,9 @@ class HGTConv(MessagePassing):
             In case a node type does not receive any message, its output will
             be set to :obj:`None`.
         """
+
+        self._validate_inputs(edge_index_dict, edge_time_diff_dict)
+
         F = self.out_channels
         H = self.heads
         D = F // H
@@ -206,7 +237,7 @@ class HGTConv(MessagePassing):
             edge_index_dict, src_offset, dst_offset, edge_attr_dict=edge_time_diff_dict,
             num_nodes=k.size(0))
 
-        temporal_features = self.rte(edge_time_diff).view(-1, H, D) if self.use_RTE and edge_time_diff else None
+        temporal_features = self.rte(edge_time_diff).view(-1, H, D) if self.use_RTE else None
 
         out = self.propagate(edge_index, k=k, q=q, v=v, edge_attr=edge_attr, temporal_features=temporal_features)
 
