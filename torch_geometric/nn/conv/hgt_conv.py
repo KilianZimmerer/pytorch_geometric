@@ -95,6 +95,9 @@ class HGTConv(MessagePassing):
             edge_type = '__'.join(edge_type)
             self.p_rel[edge_type] = Parameter(torch.empty(1, heads))
 
+        if self.use_RTE:
+            self.rte = RelativeTemporalEncoding(self.out_channels)
+
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -199,12 +202,11 @@ class HGTConv(MessagePassing):
             edge_index_dict, src_offset, dst_offset, edge_attr_dict=self.p_rel,
             num_nodes=k.size(0))
         
-        # TODO: this is a workaround and must be included in the previous function (very complex)
         _, edge_time_diff = construct_bipartite_edge_index(
             edge_index_dict, src_offset, dst_offset, edge_attr_dict=edge_time_diff_dict,
             num_nodes=k.size(0))
 
-        temporal_features = RelativeTemporalEncoding(F)(edge_time_diff).view(-1, H, D) if self.use_RTE else None
+        temporal_features = self.rte(edge_time_diff).view(-1, H, D) if self.use_RTE and edge_time_diff else None
 
         out = self.propagate(edge_index, k=k, q=q, v=v, edge_attr=edge_attr, temporal_features=temporal_features)
 
