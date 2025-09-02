@@ -170,20 +170,21 @@ class HGTConv(MessagePassing):
 
         if not self.use_RTE and edge_time_diff_dict is not None:
             warnings.warn(
-                "'use_RTE' is False, but an 'edge_time_diff_dict' was provided. "
+                "'use_RTE' is False, but 'edge_time_diff_dict' was provided. "
                 "The temporal data will be ignored.")
             return
 
         if self.use_RTE:
             if edge_time_diff_dict is None:
                 raise ValueError(
-                    "RTE is enabled, but no 'edge_time_diff_dict' was provided."
+                    "RTE enabled, but no 'edge_time_diff_dict' was provided."
                 )
 
             for edge_type in edge_index_dict.keys():
                 if edge_type not in edge_time_diff_dict:
                     raise ValueError(
-                        f"RTE is enabled, but 'time_diff' is missing for edge type: {edge_type}. "
+                        "RTE enabled, but 'time_diff' missing for edge type: "
+                        f"{edge_type}. "
                         "All edge types must have a time difference attribute."
                     )
 
@@ -294,9 +295,9 @@ class HGTConv(MessagePassing):
 class RelativeTemporalEncoding(torch.nn.Module):
     """
     Implements the Relative Temporal Encoding (RTE) from the HGT paper.
-    
+
     RTE(∆T) = T-Linear(Base(∆T))
-    
+
     Args:
         out_channels (int): The final dimension of the temporal encoding (d).
     """
@@ -310,7 +311,7 @@ class RelativeTemporalEncoding(torch.nn.Module):
         """
         Args:
             time_delta (Tensor): A 1D tensor of time differences (∆T).
-        
+
         Returns:
             Tensor: The final relative temporal encoding vectors.
         """
