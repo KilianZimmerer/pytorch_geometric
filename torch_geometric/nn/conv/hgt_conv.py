@@ -15,6 +15,7 @@ from torch_geometric.utils import softmax
 from torch_geometric.utils.hetero import construct_bipartite_edge_index
 from torch_geometric.nn.encoding import PositionalEncoding
 
+
 class HGTConv(MessagePassing):
     r"""The Heterogeneous Graph Transformer (HGT) operator from the
     `"Heterogeneous Graph Transformer" <https://arxiv.org/abs/2003.01332>`_
@@ -162,18 +163,15 @@ class HGTConv(MessagePassing):
 
         return k, v, offset
 
-    def _validate_inputs(
-        self,
-        edge_index_dict: Dict[EdgeType, Adj],
-        edge_time_diff_dict: Optional[Dict[EdgeType, Tensor]]
-    ):
+    def _validate_inputs(self, edge_index_dict: Dict[EdgeType, Adj],
+                         edge_time_diff_dict: Optional[Dict[EdgeType,
+                                                            Tensor]]):
         """Helper function to validate inputs for temporal encoding."""
 
         if not self.use_RTE and edge_time_diff_dict is not None:
             warnings.warn(
                 "'use_RTE' is False, but an 'edge_time_diff_dict' was provided. "
-                "The temporal data will be ignored."
-            )
+                "The temporal data will be ignored.")
             return
 
         if self.use_RTE:
@@ -240,14 +238,16 @@ class HGTConv(MessagePassing):
         edge_index, edge_attr = construct_bipartite_edge_index(
             edge_index_dict, src_offset, dst_offset, edge_attr_dict=self.p_rel,
             num_nodes=k.size(0))
-        
+
         _, edge_time_diff = construct_bipartite_edge_index(
-            edge_index_dict, src_offset, dst_offset, edge_attr_dict=edge_time_diff_dict,
-            num_nodes=k.size(0))
+            edge_index_dict, src_offset, dst_offset,
+            edge_attr_dict=edge_time_diff_dict, num_nodes=k.size(0))
 
-        temporal_features = self.rte(edge_time_diff).view(-1, H, D) if self.use_RTE else None
+        temporal_features = self.rte(edge_time_diff).view(
+            -1, H, D) if self.use_RTE else None
 
-        out = self.propagate(edge_index, k=k, q=q, v=v, edge_attr=edge_attr, temporal_features=temporal_features)
+        out = self.propagate(edge_index, k=k, q=q, v=v, edge_attr=edge_attr,
+                             temporal_features=temporal_features)
 
         # Reconstruct output node embeddings dict:
         for node_type, start_offset in dst_offset.items():
@@ -274,7 +274,8 @@ class HGTConv(MessagePassing):
         return out_dict
 
     def message(self, k_j: Tensor, q_i: Tensor, v_j: Tensor, edge_attr: Tensor,
-                index: Tensor, ptr: Optional[Tensor], temporal_features: Optional[Tensor],
+                index: Tensor, ptr: Optional[Tensor],
+                temporal_features: Optional[Tensor],
                 size_i: Optional[int]) -> Tensor:
         if temporal_features is not None:
             k_j = k_j + temporal_features
@@ -302,7 +303,8 @@ class RelativeTemporalEncoding(torch.nn.Module):
     def __init__(self, out_channels: int):
         super().__init__()
         self.base_encoder = PositionalEncoding(out_channels)
-        self.linear_projection = Linear(in_features=out_channels, out_features=out_channels)
+        self.linear_projection = Linear(in_features=out_channels,
+                                        out_features=out_channels)
 
     def forward(self, time_delta: Tensor) -> Tensor:
         """
