@@ -380,18 +380,26 @@ def test_hgt_conv_rte_behavioral():
         data['target'].x[target1] = identical_target_features
         data['target'].x[target2] = identical_target_features
 
-        # Randomly decide which path is faster
+        # Randomly decide which target receives the "fast" edge
         if torch.rand(1) > 0.5:
-            fast_time, slow_time = 5.0, 50.0
-            fast_label, slow_label = 1, 0
+            # In this case, the edge to target1 is the faster one
+            time_for_target1 = 5.0
+            label_for_target1 = 1
+
+            time_for_target2 = 50.0
+            label_for_target2 = 0
         else:
-            fast_time, slow_time = 50.0, 5.0
-            fast_label, slow_label = 0, 1
+            # In this case, the edge to target2 is the faster one
+            time_for_target1 = 50.0
+            label_for_target1 = 0
+
+            time_for_target2 = 5.0
+            label_for_target2 = 1
 
         source_indices.extend([i, i])
         target_indices.extend([target1, target2])
-        time_list.extend([fast_time, slow_time])
-        label_list.extend([fast_label, slow_label])
+        time_list.extend([time_for_target1, time_for_target2])
+        label_list.extend([label_for_target1, label_for_target2])
 
     edge_index = torch.tensor([source_indices, target_indices])
     data['source', 'to', 'target'].edge_index = edge_index
