@@ -205,10 +205,10 @@ class HGTConv(MessagePassing):
                 individual edge type, either as a :class:`torch.Tensor` of
                 shape :obj:`[2, num_edges]` or a
                 :class:`torch_sparse.SparseTensor`.
-            edge_time_diff_dict (Dict[Tuple[str, str, str], torch.Tensor],
-                optional): A dictionary holding time differences (∆T) for each
+            edge_time_diff_dict (Dict[EdgeType, torch.Tensor], optional):
+                A dictionary holding time differences (∆T) for each
                 individual edge type. Each entry must be a 1D
-                :class:`torch.Tensor` of shape :obj:`[num_edges]`. Must be
+                :class:`torch.Tensor` of shape :obj:`[num_edges]`. It must be
                 provided if :obj:`use_RTE=True`. (default: :obj:`None`)
 
         :rtype: :obj:`Dict[str, Optional[torch.Tensor]]` - The output node
