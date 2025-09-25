@@ -163,9 +163,10 @@ class HGTConv(MessagePassing):
 
         return k, v, offset
 
-    def _validate_inputs(self, edge_index_dict: Dict[EdgeType, Adj],
-                         edge_time_diff_dict: Optional[Dict[EdgeType,
-                                                            Tensor]]):
+    def _validate_inputs(
+        self, edge_index_dict: Dict[EdgeType, Adj],
+        edge_time_diff_dict: Optional[Dict[EdgeType, Tensor]]
+    ) -> None:
         """Helper function to validate inputs for temporal encoding."""
 
         if not self.use_RTE and edge_time_diff_dict is not None:
