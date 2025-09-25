@@ -4,7 +4,7 @@ import warnings
 
 import torch
 from torch import Tensor
-from torch.nn import Parameter, Linear
+from torch.nn import Parameter
 
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.nn.dense import HeteroDictLinear, HeteroLinear
@@ -182,7 +182,6 @@ class HGTConv(MessagePassing):
 
             for edge_type in edge_index_dict.keys():
                 if edge_type not in edge_time_diff_dict:
-                    # TODO: either set this automatically to zero and set warning or raise the error as is. 
                     raise ValueError(
                         "RTE enabled, but 'time_diff' missing for edge type: "
                         f"{edge_type}. "
