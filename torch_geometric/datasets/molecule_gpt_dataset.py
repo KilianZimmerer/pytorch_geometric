@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from torch_geometric.data import Data, InMemoryDataset, download_url
 from torch_geometric.io import fs
-from torch_geometric.nn.nlp import LLM
+from torch_geometric.llm.models import LLM
 from torch_geometric.utils import one_hot
 
 
@@ -174,7 +174,7 @@ def extract_name(
 class MoleculeGPTDataset(InMemoryDataset):
     r"""The dataset from the `"MoleculeGPT: Instruction Following Large
     Language Models for Molecular Property Prediction"
-    <https://ai4d3.github.io/papers/34.pdf>`_ paper.
+    <https://ai4d3.github.io/2023/papers/34.pdf>`_ paper.
 
     Args:
         root (str): Root directory where the dataset should be saved.
