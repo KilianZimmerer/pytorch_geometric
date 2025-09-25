@@ -353,6 +353,7 @@ def test_rte_zero_time_diff():
 
     assert not torch.allclose(author_out_zero, author_out_original)
 
+# TODO: a test that checks if floating time diffs are handleded correctly
 
 if __name__ == '__main__':
     import argparse

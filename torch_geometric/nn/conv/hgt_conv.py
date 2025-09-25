@@ -101,7 +101,7 @@ class HGTConv(MessagePassing):
             self.p_rel[edge_type] = Parameter(torch.empty(1, heads))
 
         if self.use_RTE:
-            self.rte = RelativeTemporalEncoding(self.out_channels)
+            self.rte = PositionalEncoding(self.out_channels)
 
         self.reset_parameters()
 
@@ -182,6 +182,7 @@ class HGTConv(MessagePassing):
 
             for edge_type in edge_index_dict.keys():
                 if edge_type not in edge_time_diff_dict:
+                    # TODO: either set this automatically to zero and set warning or raise the error as is. 
                     raise ValueError(
                         "RTE enabled, but 'time_diff' missing for edge type: "
                         f"{edge_type}. "
@@ -290,30 +291,3 @@ class HGTConv(MessagePassing):
     def __repr__(self) -> str:
         return (f'{self.__class__.__name__}(-1, {self.out_channels}, '
                 f'heads={self.heads})')
-
-
-class RelativeTemporalEncoding(torch.nn.Module):
-    """
-    Implements the Relative Temporal Encoding (RTE) from the HGT paper.
-
-    RTE(∆T) = T-Linear(Base(∆T))
-
-    Args:
-        out_channels (int): The final dimension of the temporal encoding (d).
-    """
-    def __init__(self, out_channels: int):
-        super().__init__()
-        self.base_encoder = PositionalEncoding(out_channels)
-        self.linear_projection = Linear(in_features=out_channels,
-                                        out_features=out_channels)
-
-    def forward(self, time_delta: Tensor) -> Tensor:
-        """
-        Args:
-            time_delta (Tensor): A 1D tensor of time differences (∆T).
-
-        Returns:
-            Tensor: The final relative temporal encoding vectors.
-        """
-        base_encoding = self.base_encoder(time_delta)
-        return self.linear_projection(base_encoding)
