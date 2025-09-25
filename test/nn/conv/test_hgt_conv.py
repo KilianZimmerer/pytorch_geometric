@@ -239,6 +239,7 @@ def test_hgt_conv_missing_edge_type():
 
 
 def test_rte_on_vs_off():
+    """Test whether RTE has an effect when enabled vs. disabled."""
     data = HeteroData()
     data['author'].x = torch.randn(4, 16)
     data['paper'].x = torch.randn(6, 32)
@@ -277,6 +278,12 @@ def test_rte_on_vs_off():
 
 
 def test_rte_sensitivity_to_time_values():
+    """Tests the sensitivity of the HGTConv layer to its temporal inputs.
+
+    This test ensures that when the `edge_time_diff_dict` values are
+    modified, the output embeddings of the HGTConv layer with RTE enabled
+    also change.
+    """
     data = HeteroData()
     data['author'].x = torch.randn(4, 16)
     data['paper'].x = torch.randn(6, 32)
@@ -317,6 +324,12 @@ def test_rte_sensitivity_to_time_values():
 
 
 def test_rte_zero_time_diff():
+    """Tests that a zero time difference produces a different output.
+
+    This test ensures that the output of the HGTConv layer with RTE is
+    different when given non-zero time differences compared to when all
+    time differences are set to zero.
+    """
     data = HeteroData()
     data['author'].x = torch.randn(4, 16)
     data['paper'].x = torch.randn(6, 32)
@@ -359,9 +372,15 @@ def test_rte_zero_time_diff():
 
 
 def test_hgt_conv_rte_behavioral():
-    """Test whether RTE enables HGTConv to learn a simple time-dependent
-    rule on a synthetic heterogeneous temporal graph, while the model fails
-    to learn the same rule without RTE."""
+    """Tests if HGTConv with RTE can learn a purely time-dependent rule.
+
+    Each 'source' node has two outgoing edges. The edge with the smaller
+    `time_diff` is labeled as correct (1).
+
+    The test asserts that the model with `use_RTE=True` successfully
+    learns this rule (high accuracy), while the model with `use_RTE=False`
+    fails (accuracy near random chance of 0.5).
+    """
     num_source_nodes = 50
     data = HeteroData()
     data['source'].x = torch.randn(num_source_nodes, 16)

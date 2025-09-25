@@ -193,7 +193,7 @@ class HGTConv(MessagePassing):
         self,
         x_dict: Dict[NodeType, Tensor],
         edge_index_dict: Dict[EdgeType, Adj],  # Support both.
-        edge_time_diff_dict: Optional[Dict[EdgeType, Tensor]] = None
+        edge_time_diff_dict: Optional[Dict[EdgeType, Tensor]] = None,
     ) -> Dict[NodeType, Optional[Tensor]]:
         r"""Runs the forward pass of the module.
 
