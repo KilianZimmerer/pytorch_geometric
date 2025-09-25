@@ -1,4 +1,8 @@
 import torch
+import pytest
+
+from torch.nn import Linear, CrossEntropyLoss
+from torch.optim import Adam
 
 import torch_geometric.typing
 from torch_geometric.data import HeteroData
@@ -353,7 +357,107 @@ def test_rte_zero_time_diff():
 
     assert not torch.allclose(author_out_zero, author_out_original)
 
-# TODO: a test that checks if floating time diffs are handleded correctly
+
+def test_hgt_conv_rte_behavioral():
+    """Test whether RTE enables HGTConv to learn a simple time-dependent
+    rule on a synthetic heterogeneous temporal graph, while the model fails
+    to learn the same rule without RTE."""
+    num_source_nodes = 50
+    data = HeteroData()
+    data['source'].x = torch.randn(num_source_nodes, 16)
+    data['target'].x = torch.randn(num_source_nodes * 2, 16)
+
+    source_indices = []
+    target_indices = []
+    time_list = []
+    label_list = []
+
+    for i in range(num_source_nodes):
+        target1 = i * 2
+        target2 = i * 2 + 1
+        
+        identical_target_features = torch.randn(1, 16)
+        data['target'].x[target1] = identical_target_features
+        data['target'].x[target2] = identical_target_features
+
+        # Randomly decide which path is faster
+        if torch.rand(1) > 0.5:
+            fast_time, slow_time = 5.0, 50.0
+            fast_label, slow_label = 1, 0
+        else:
+            fast_time, slow_time = 50.0, 5.0
+            fast_label, slow_label = 0, 1
+
+        source_indices.extend([i, i])
+        target_indices.extend([target1, target2])
+        time_list.extend([fast_time, slow_time])
+        label_list.extend([fast_label, slow_label])
+
+    edge_index = torch.tensor([source_indices, target_indices])
+    data['source', 'to', 'target'].edge_index = edge_index
+    data['source', 'to', 'target'].time_diff = torch.tensor(time_list)
+    data['source', 'to', 'target'].y = torch.tensor(label_list)
+
+    data['target', 'rev_to', 'source'].edge_index = edge_index.flip(0)
+    data['target', 'rev_to', 'source'].time_diff = torch.zeros(len(time_list))
+    
+    metadata = data.metadata()
+
+    class HGTEdgeClassifier(torch.nn.Module):
+        def __init__(self, out_channels, use_rte=True):
+            super().__init__()
+            self.conv = HGTConv(-1, out_channels, metadata, heads=2,
+                                use_RTE=use_rte)
+            self.classifier = Linear(out_channels * 2, 2)
+
+        def forward(self, x_dict, edge_index_dict, edge_time_diff_dict,
+                    edge_label_index):
+            x_dict = self.conv(x_dict, edge_index_dict, edge_time_diff_dict)
+            src_emb = x_dict['source'][edge_label_index[0]]
+            dst_emb = x_dict['target'][edge_label_index[1]]
+            edge_emb = torch.cat([src_emb, dst_emb], dim=-1)
+            return self.classifier(edge_emb)
+
+    def train_and_test(use_rte):
+        torch.manual_seed(42)
+        model = HGTEdgeClassifier(out_channels=16, use_rte=use_rte)
+        optimizer = Adam(model.parameters(), lr=0.01)
+        criterion = CrossEntropyLoss()
+
+        model_call = lambda: model(
+            data.x_dict, data.edge_index_dict,
+            data.time_diff_dict,
+            data['source', 'to', 'target'].edge_index
+        )
+
+        for _ in range(20):
+            optimizer.zero_grad()
+
+            if not use_rte:
+                with pytest.warns(UserWarning, match="'use_RTE' is False"):
+                    logits = model_call()
+            else:
+                logits = model_call()
+
+            loss = criterion(logits, data['source', 'to', 'target'].y)
+            loss.backward()
+            optimizer.step()
+        
+        with torch.no_grad():
+            if not use_rte:
+                with pytest.warns(UserWarning, match="'use_RTE' is False"):
+                    pred = model_call().argmax(dim=-1)
+            else:
+                pred = model_call().argmax(dim=-1)
+
+            return (pred == data['source', 'to', 'target'].y).float().mean().item()
+
+    acc_with_rte = train_and_test(use_rte=True)
+    assert acc_with_rte >= 0.95
+
+    acc_without_rte = train_and_test(use_rte=False)
+    assert acc_without_rte <= 0.6
+
 
 if __name__ == '__main__':
     import argparse
