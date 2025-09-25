@@ -375,7 +375,7 @@ def test_hgt_conv_rte_behavioral():
     for i in range(num_source_nodes):
         target1 = i * 2
         target2 = i * 2 + 1
-        
+
         identical_target_features = torch.randn(1, 16)
         data['target'].x[target1] = identical_target_features
         data['target'].x[target2] = identical_target_features
@@ -400,7 +400,7 @@ def test_hgt_conv_rte_behavioral():
 
     data['target', 'rev_to', 'source'].edge_index = edge_index.flip(0)
     data['target', 'rev_to', 'source'].time_diff = torch.zeros(len(time_list))
-    
+
     metadata = data.metadata()
 
     class HGTEdgeClassifier(torch.nn.Module):
@@ -424,33 +424,31 @@ def test_hgt_conv_rte_behavioral():
         optimizer = Adam(model.parameters(), lr=0.01)
         criterion = CrossEntropyLoss()
 
-        model_call = lambda: model(
-            data.x_dict, data.edge_index_dict,
-            data.time_diff_dict,
-            data['source', 'to', 'target'].edge_index
-        )
+        args = [data.x_dict, data.edge_index_dict, data.time_diff_dict,
+                data['source', 'to', 'target'].edge_index]
+        edge_data = data['source', 'to', 'target']
 
         for _ in range(20):
             optimizer.zero_grad()
 
             if not use_rte:
                 with pytest.warns(UserWarning, match="'use_RTE' is False"):
-                    logits = model_call()
+                    logits = model(*args)
             else:
-                logits = model_call()
+                logits = model(*args)
 
-            loss = criterion(logits, data['source', 'to', 'target'].y)
+            loss = criterion(logits, edge_data.y)
             loss.backward()
             optimizer.step()
-        
+
         with torch.no_grad():
             if not use_rte:
                 with pytest.warns(UserWarning, match="'use_RTE' is False"):
-                    pred = model_call().argmax(dim=-1)
+                    pred = model(*args).argmax(dim=-1)
             else:
-                pred = model_call().argmax(dim=-1)
+                pred = model(*args).argmax(dim=-1)
 
-            return (pred == data['source', 'to', 'target'].y).float().mean().item()
+            return (pred == edge_data.y).float().mean().item()
 
     acc_with_rte = train_and_test(use_rte=True)
     assert acc_with_rte >= 0.95
