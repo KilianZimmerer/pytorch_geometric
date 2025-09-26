@@ -331,29 +331,20 @@ def test_rte_zero_time_diff():
 
     uea_edge = data['university', 'employs', 'author']
     uea_edge.edge_index = get_random_edge_index(10, 4, 15)
-    uea_edge.time_diff = torch.randint(0, 100, (uea_edge.num_edges, ))
+    uea_edge.time_diff = torch.zeros(uea_edge.num_edges, dtype=torch.long)
 
     awp_edge = data['author', 'writes', 'paper']
     awp_edge.edge_index = get_random_edge_index(4, 6, 20)
-    awp_edge.time_diff = torch.randint(0, 100, (awp_edge.num_edges, ))
+    awp_edge.time_diff = torch.zeros(awp_edge.num_edges, dtype=torch.long)
 
     metadata = data.metadata()
     torch.manual_seed(42)
     conv_with_rte = HGTConv(-1, 64, metadata, heads=2, use_RTE=True)
 
-    data_zero_time = data.clone()
-    for edge_type in data.edge_types:
-        if 'time_diff' in data[edge_type]:
-            num_edges = data[edge_type].num_edges
-            data_zero_time[edge_type].time_diff = torch.zeros(
-                num_edges,
-                dtype=torch.long,
-            )
-
     out_dict_zero = conv_with_rte(
         data.x_dict,
         data.edge_index_dict,
-        data_zero_time.time_diff_dict
+        data.time_diff_dict
     )
     author_out_zero = out_dict_zero['author']
 
