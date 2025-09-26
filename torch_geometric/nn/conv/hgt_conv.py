@@ -187,7 +187,7 @@ class HGTConv(MessagePassing):
                     raise ValueError(
                         "RTE enabled, but 'time_diff' missing for edge type: "
                         f"{edge_type}. "
-                        "All edge types must have a time difference attribute."
+                        "All edge types must have a time_diff attribute."
                     )
 
     def forward(
