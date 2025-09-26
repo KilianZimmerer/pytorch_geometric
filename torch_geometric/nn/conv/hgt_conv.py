@@ -40,7 +40,7 @@ class HGTConv(MessagePassing):
         heads (int, optional): Number of multi-head-attentions.
             (default: :obj:`1`)
         use_RTE (bool, optional): If set to :obj:`True`, the layer uses
-            Relative Temporal Encoding (RTE) as described in the paper.
+            Relative Temporal Encoding (RTE).
             (default: :obj:`False`)
         **kwargs (optional): Additional arguments of
             :class:`torch_geometric.nn.conv.MessagePassing`.
