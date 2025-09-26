@@ -369,7 +369,6 @@ def test_rte_raises_error_if_time_is_missing():
     conv = HGTConv(-1, 32, metadata, heads=2, use_RTE=True)
 
     with pytest.raises(ValueError, match="RTE enabled, but no"):
-        # This call should fail because edge_time_diff_dict is missing
         conv(data.x_dict, data.edge_index_dict)
 
 
